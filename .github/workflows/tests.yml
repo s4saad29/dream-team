@@ -1,0 +1,84 @@
+name: Tests
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    name: Smoke (login + forgot password)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
+
+      - name: Run smoke tests
+        run: pytest tests/test_login_page.py tests/test_forgot_password_page.py -m smoke -v
+        env:
+          HEADLESS: "true"
+          BROWSER: chromium
+
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-report
+          path: reports/report.html
+          if-no-files-found: ignore
+
+  authenticated:
+    name: Authenticated (profile + dashboard + logout)
+    runs-on: ubuntu-latest
+    needs: smoke
+    if: secrets.TEST_USER_EMAIL != '' && secrets.TEST_USER_PASSWORD != ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
+
+      - name: Restore saved auth state
+        if: secrets.AUTH_STORAGE_STATE != ''
+        run: |
+          mkdir -p auth
+          echo "${{ secrets.AUTH_STORAGE_STATE }}" | base64 -d > auth/storage_state.json
+
+      - name: Run authenticated tests
+        run: |
+          pytest tests/test_login_page.py::TestLoginPage::test_log_in_with_microsoft_redirects_to_microsoft_sso \
+            tests/test_profile_page.py \
+            tests/test_dashboard_page.py \
+            tests/test_logout_page.py \
+            -v
+        env:
+          HEADLESS: "true"
+          BROWSER: chromium
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: authenticated-report
+          path: reports/report.html
+          if-no-files-found: ignore
