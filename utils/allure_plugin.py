@@ -17,6 +17,7 @@ from utils.allure_reporting import (
     attach_failure_screenshot_to_allure,
     clear_collected_results,
     finalize_allure_session,
+    generate_allure_html_report,
     get_collected_results,
     record_test_result,
     resolve_playwright_page,
@@ -72,5 +73,19 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         exit_status=exitstatus,
         results_json_path=DEFAULT_JSON,
     )
-    print("\nAllure results: allure-results/")
-    print("Generate HTML: .\\scripts\\allure_report.ps1")
+
+    try:
+        report_index = generate_allure_html_report()
+    except RuntimeError as exc:
+        print(f"\nAllure report generation failed: {exc}")
+        print("Raw results saved in allure-results/")
+        print("Retry manually: .\\scripts\\allure_report.ps1")
+    else:
+        if report_index:
+            print(f"\nAllure report: {report_index}")
+        else:
+            print("\nAllure results: allure-results/")
+            print(
+                "Install Allure CLI (scoop/choco) or run "
+                "`npm install --save-dev allure-commandline`, then re-run pytest."
+            )

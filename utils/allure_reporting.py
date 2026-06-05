@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import subprocess
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -204,3 +206,47 @@ def finalize_allure_session(
     )
     sync_pytest_results_json(results_json_path, results_dir=results_dir)
     attach_results_summary_to_allure(results, results_dir=results_dir)
+
+
+def find_allure_cli() -> Path | None:
+    """Resolve the Allure CLI from PATH or local node_modules."""
+    on_path = shutil.which("allure")
+    if on_path:
+        return Path(on_path)
+
+    bin_name = "allure.cmd" if sys.platform == "win32" else "allure"
+    local_cli = PROJECT_ROOT / "node_modules" / ".bin" / bin_name
+    if local_cli.is_file():
+        return local_cli
+
+    return None
+
+
+def generate_allure_html_report(
+    *,
+    results_dir: Path = ALLURE_RESULTS_DIR,
+    report_dir: Path = ALLURE_REPORT_DIR,
+) -> Path | None:
+    """Build allure-report/index.html from allure-results after pytest finishes."""
+    cli = find_allure_cli()
+    if cli is None:
+        return None
+
+    if not results_dir.is_dir() or not any(results_dir.iterdir()):
+        return None
+
+    report_dir.mkdir(parents=True, exist_ok=True)
+    completed = subprocess.run(
+        [str(cli), "generate", str(results_dir), "-o", str(report_dir), "--clean"],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=str(PROJECT_ROOT),
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(
+            completed.stderr.strip() or completed.stdout.strip() or "allure generate failed"
+        )
+
+    index = report_dir / "index.html"
+    return index if index.is_file() else None

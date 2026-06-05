@@ -88,19 +88,21 @@ start reports/dashboard.html
 
 On failure, a full-page screenshot is saved under `screenshots/` and embedded in the HTML report.
 
-### Allure report (optional HTML)
+### Allure report
 
-Allure runs in parallel with pytest-html and the dashboard (no changes to existing test logic or hooks in `conftest.py`). Each `pytest` run writes raw results to `allure-results/` and syncs `reports/results.json` into that folder.
+Each `pytest` run writes raw results to `allure-results/` and **automatically generates** `allure-report/index.html` when the Allure CLI is available (PATH, or `node_modules/.bin/allure` after `npm install --save-dev allure-commandline`).
 
 ```powershell
-# After any pytest run
-.\scripts\allure_report.ps1
-
-# Or serve without generating static HTML (requires Allure CLI on PATH)
-.\scripts\allure_report.ps1 -ServeOnly
+pytest
+start allure-report/index.html
 ```
 
-Install the [Allure CLI](https://allurereport.org/docs/install/) (`scoop install allure` or `choco install allure-commandline`) to generate `allure-report/index.html`.
+Manual regenerate or serve only:
+
+```powershell
+.\scripts\allure_report.ps1
+.\scripts\allure_report.ps1 -ServeOnly
+```
 
 ## Playwright codegen (pytest)
 
