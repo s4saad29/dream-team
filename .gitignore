@@ -20,6 +20,7 @@ screenshots/
 videos/
 trace/
 allure-results/
+allure-report/
 .idea/
 .vscode/
 auth/storage_state.json

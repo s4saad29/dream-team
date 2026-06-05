@@ -15,13 +15,16 @@ DreamTeam Automation/
 │   ├── dashboard_page.py    # Dashboard page object
 │   └── ...
 ├── tests/
+│   ├── conftest.py            # Registers Allure plugin only
 │   ├── test_login_page.py
 │   ├── test_forgot_password_page.py
 │   ├── test_profile_page.py
 │   ├── test_dashboard_page.py
 │   └── test_logout_page.py
 ├── utils/
-│   └── auth_helper.py         # SSO login and storage_state helpers
+│   ├── auth_helper.py         # SSO login and storage_state helpers
+│   ├── allure_reporting.py    # Standalone Allure helpers
+│   └── allure_plugin.py       # Pytest plugin (registered in pytest.ini)
 ├── scripts/
 │   └── save_auth_and_explore_dashboard.py
 ├── conftest.py              # Pytest fixtures
@@ -84,6 +87,20 @@ start reports/dashboard.html
 ```
 
 On failure, a full-page screenshot is saved under `screenshots/` and embedded in the HTML report.
+
+### Allure report (optional HTML)
+
+Allure runs in parallel with pytest-html and the dashboard (no changes to existing test logic or hooks in `conftest.py`). Each `pytest` run writes raw results to `allure-results/` and syncs `reports/results.json` into that folder.
+
+```powershell
+# After any pytest run
+.\scripts\allure_report.ps1
+
+# Or serve without generating static HTML (requires Allure CLI on PATH)
+.\scripts\allure_report.ps1 -ServeOnly
+```
+
+Install the [Allure CLI](https://allurereport.org/docs/install/) (`scoop install allure` or `choco install allure-commandline`) to generate `allure-report/index.html`.
 
 ## Playwright codegen (pytest)
 
